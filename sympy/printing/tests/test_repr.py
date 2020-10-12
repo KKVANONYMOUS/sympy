@@ -6,6 +6,7 @@ from sympy import (symbols, sympify, Function, Integer, Matrix, Abs,
     sqrt, root, AlgebraicNumber, Symbol, Dummy, Wild, MatrixSymbol)
 from sympy.combinatorics import Cycle, Permutation
 from sympy.core.compatibility import exec_
+from sympy.core.symbol import Str
 from sympy.geometry import Point, Ellipse
 from sympy.printing import srepr
 from sympy.polys import ring, field, ZZ, QQ, lex, grlex, Poly
@@ -16,7 +17,7 @@ x, y = symbols('x,y')
 
 # eval(srepr(expr)) == expr has to succeed in the right environment. The right
 # environment is the scope of "from sympy import *" for most cases.
-ENV = {}  # type: Dict[str, Any]
+ENV = {"Str": Str}  # type: Dict[str, Any]
 exec_("from sympy import *", ENV)
 
 
@@ -295,9 +296,9 @@ def test_matrix_expressions():
     n = symbols('n', integer=True)
     A = MatrixSymbol("A", n, n)
     B = MatrixSymbol("B", n, n)
-    sT(A, "MatrixSymbol(Symbol('A'), Symbol('n', integer=True), Symbol('n', integer=True))")
-    sT(A*B, "MatMul(MatrixSymbol(Symbol('A'), Symbol('n', integer=True), Symbol('n', integer=True)), MatrixSymbol(Symbol('B'), Symbol('n', integer=True), Symbol('n', integer=True)))")
-    sT(A + B, "MatAdd(MatrixSymbol(Symbol('A'), Symbol('n', integer=True), Symbol('n', integer=True)), MatrixSymbol(Symbol('B'), Symbol('n', integer=True), Symbol('n', integer=True)))")
+    sT(A, "MatrixSymbol(Str('A'), Symbol('n', integer=True), Symbol('n', integer=True))")
+    sT(A*B, "MatMul(MatrixSymbol(Str('A'), Symbol('n', integer=True), Symbol('n', integer=True)), MatrixSymbol(Str('B'), Symbol('n', integer=True), Symbol('n', integer=True)))")
+    sT(A + B, "MatAdd(MatrixSymbol(Str('A'), Symbol('n', integer=True), Symbol('n', integer=True)), MatrixSymbol(Str('B'), Symbol('n', integer=True), Symbol('n', integer=True)))")
 
 
 def test_Cycle():
@@ -311,18 +312,6 @@ def test_Cycle():
 def test_Permutation():
     import_stmt = "from sympy.combinatorics import Permutation"
     sT(Permutation(1, 2), "Permutation(1, 2)", import_stmt)
-
-
-def test_diffgeom():
-    from sympy.diffgeom import Manifold, Patch, CoordSystem, BaseScalarField
-    m = Manifold('M', 2)
-    assert srepr(m) == "Manifold('M', 2)"
-    p = Patch('P', m)
-    assert srepr(p) == "Patch('P', Manifold('M', 2))"
-    rect = CoordSystem('rect', p)
-    assert srepr(rect) == "CoordSystem('rect', Patch('P', Manifold('M', 2)), ('rect_0', 'rect_1'))"
-    b = BaseScalarField(rect, 0)
-    assert srepr(b) == "BaseScalarField(CoordSystem('rect', Patch('P', Manifold('M', 2)), ('rect_0', 'rect_1')), Integer(0))"
 
 def test_dict():
     from sympy import srepr

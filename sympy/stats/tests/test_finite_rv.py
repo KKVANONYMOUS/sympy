@@ -119,8 +119,8 @@ def test_dice():
     D = Die('D', n)
     dens = density(D).dict
     assert dens == Density(DieDistribution(n))
-    assert set(dens.subs(n, 4).doit().keys()) == set([1, 2, 3, 4])
-    assert set(dens.subs(n, 4).doit().values()) == set([Rational(1, 4)])
+    assert set(dens.subs(n, 4).doit().keys()) == {1, 2, 3, 4}
+    assert set(dens.subs(n, 4).doit().values()) == {Rational(1, 4)}
     k = Dummy('k', integer=True)
     assert E(D).dummy_eq(
         Sum(Piecewise((k/n, k <= n), (0, True)), (k, 1, n)))
@@ -149,7 +149,7 @@ def test_given():
     scipy = import_module('scipy')
     if not scipy:
         skip('Scipy is not installed. Abort tests')
-    with ignore_warnings(UserWarning):
+    with ignore_warnings(UserWarning): ### TODO: Restore tests once warnings are removed
         assert next(sample(X, X > 5)) == 6
 
 
@@ -282,7 +282,7 @@ def test_binomial_symbolic():
 
     assert simplify(E(X)) == n*p == simplify(moment(X, 1))
     assert simplify(variance(X)) == n*p*(1 - p) == simplify(cmoment(X, 2))
-    assert cancel((skewness(X) - (1 - 2*p)/sqrt(n*p*(1 - p)))) == 0
+    assert cancel(skewness(X) - (1 - 2*p)/sqrt(n*p*(1 - p))) == 0
     assert cancel((kurtosis(X)) - (3 + (1 - 6*p*(1 - p))/(n*p*(1 - p)))) == 0
     assert characteristic_function(X)(t) == p ** 2 * exp(2 * I * t) + 2 * p * (-p + 1) * exp(I * t) + (-p + 1) ** 2
     assert moment_generating_function(X)(t) == p ** 2 * exp(2 * t) + 2 * p * (-p + 1) * exp(t) + (-p + 1) ** 2
@@ -298,9 +298,9 @@ def test_binomial_symbolic():
     raises(NotImplementedError, lambda: P(B > 2))
     assert density(B).dict == Density(BinomialDistribution(n, p, 1, 0))
     assert set(density(B).dict.subs(n, 4).doit().keys()) == \
-    set([S.Zero, S.One, S(2), S(3), S(4)])
+    {S.Zero, S.One, S(2), S(3), S(4)}
     assert set(density(B).dict.subs(n, 4).doit().values()) == \
-    set([(1 - p)**4, 4*p*(1 - p)**3, 6*p**2*(1 - p)**2, 4*p**3*(1 - p), p**4])
+    {(1 - p)**4, 4*p*(1 - p)**3, 6*p**2*(1 - p)**2, 4*p**3*(1 - p), p**4}
     k = Dummy('k', integer=True)
     assert E(B > 2).dummy_eq(
         Sum(Piecewise((k*p**k*(1 - p)**(-k + n)*binomial(n, k), (k >= 0)
@@ -363,8 +363,8 @@ def test_hypergeometric_symbolic():
     expec = E(H > 2)
     assert dens == Density(HypergeometricDistribution(N, m, n))
     assert dens.subs(N, 5).doit() == Density(HypergeometricDistribution(5, m, n))
-    assert set(dens.subs({N: 3, m: 2, n: 1}).doit().keys()) == set([S.Zero, S.One])
-    assert set(dens.subs({N: 3, m: 2, n: 1}).doit().values()) == set([Rational(1, 3), Rational(2, 3)])
+    assert set(dens.subs({N: 3, m: 2, n: 1}).doit().keys()) == {S.Zero, S.One}
+    assert set(dens.subs({N: 3, m: 2, n: 1}).doit().values()) == {Rational(1, 3), Rational(2, 3)}
     k = Dummy('k', integer=True)
     assert expec.dummy_eq(
         Sum(Piecewise((k*binomial(m, k)*binomial(N - m, -k + n)
@@ -383,7 +383,7 @@ def test_rademacher():
 
 
 def test_FiniteRV():
-    F = FiniteRV('F', {1: S.Half, 2: Rational(1, 4), 3: Rational(1, 4)})
+    F = FiniteRV('F', {1: S.Half, 2: Rational(1, 4), 3: Rational(1, 4)}, check=True)
     p = Symbol("p", positive=True)
 
     assert dict(density(F).items()) == {S.One: S.Half, S(2): Rational(1, 4), S(3): Rational(1, 4)}
@@ -395,10 +395,16 @@ def test_FiniteRV():
         *[Eq(F.symbol, i) for i in [1, 2, 3]])
 
     assert F.pspace.domain.set == FiniteSet(1, 2, 3)
-    raises(ValueError, lambda: FiniteRV('F', {1: S.Half, 2: S.Half, 3: S.Half}))
-    raises(ValueError, lambda: FiniteRV('F', {1: S.Half, 2: Rational(-1, 2), 3: S.One}))
+    raises(ValueError, lambda: FiniteRV('F', {1: S.Half, 2: S.Half, 3: S.Half}, check=True))
+    raises(ValueError, lambda: FiniteRV('F', {1: S.Half, 2: Rational(-1, 2), 3: S.One}, check=True))
     raises(ValueError, lambda: FiniteRV('F', {1: S.One, 2: Rational(3, 2), 3: S.Zero,\
-        4: Rational(-1, 2), 5: Rational(-3, 4), 6: Rational(-1, 4)}))
+        4: Rational(-1, 2), 5: Rational(-3, 4), 6: Rational(-1, 4)}, check=True))
+
+    # purposeful invalid pmf but it should not raise since check=False
+    # see test_drv_types.test_ContinuousRV for explanation
+    X = FiniteRV('X', {1: 1, 2: 2})
+    assert E(X) == 5
+    assert P(X <= 2) + P(X > 2) != 1
 
 def test_density_call():
     from sympy.abc import p
@@ -452,7 +458,7 @@ def test_sample_numpy():
     if not numpy:
         skip('Numpy is not installed. Abort tests for _sample_numpy.')
     else:
-        with ignore_warnings(UserWarning):
+        with ignore_warnings(UserWarning): ### TODO: Restore tests once warnings are removed
             for X in distribs_numpy:
                 samps = next(sample(X, size=size, library='numpy'))
                 for sam in samps:
@@ -480,7 +486,7 @@ def test_sample_scipy():
     if not scipy:
         skip('Scipy not installed. Abort tests for _sample_scipy.')
     else:
-        with ignore_warnings(UserWarning):
+        with ignore_warnings(UserWarning): ### TODO: Restore tests once warnings are removed
             h_sample = list(sample(Hypergeometric("H", 1, 1, 1), size=size, numsamples=numsamples))
             assert len(h_sample) == numsamples
             for X in distribs_scipy:
@@ -503,7 +509,7 @@ def test_sample_pymc3():
     if not pymc3:
         skip('PyMC3 is not installed. Abort tests for _sample_pymc3.')
     else:
-        with ignore_warnings(UserWarning):
+        with ignore_warnings(UserWarning): ### TODO: Restore tests once warnings are removed
             for X in distribs_pymc3:
                 samps = next(sample(X, size=size, library='pymc3'))
                 for sam in samps:

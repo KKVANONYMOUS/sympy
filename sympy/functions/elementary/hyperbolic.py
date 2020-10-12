@@ -71,9 +71,17 @@ def _peeloff_ipi(arg):
 
 class sinh(HyperbolicFunction):
     r"""
-    The hyperbolic sine function, `\frac{e^x - e^{-x}}{2}`.
+    sinh(x) is the hyperbolic sine of x.
 
-    * sinh(x) -> Returns the hyperbolic sine of x
+    The hyperbolic sine function is $\frac{e^x - e^{-x}}{2}$.
+
+    Examples
+    ========
+
+    >>> from sympy import sinh
+    >>> from sympy.abc import x
+    >>> sinh(x)
+    sinh(x)
 
     See Also
     ========
@@ -206,7 +214,7 @@ class sinh(HyperbolicFunction):
             return (sinh(x)*cosh(y) + sinh(y)*cosh(x)).expand(trig=True)
         return sinh(arg)
 
-    def _eval_rewrite_as_tractable(self, arg, **kwargs):
+    def _eval_rewrite_as_tractable(self, arg, limitvar=None, **kwargs):
         return (exp(arg) - exp(-arg)) / 2
 
     def _eval_rewrite_as_exp(self, arg, **kwargs):
@@ -266,9 +274,17 @@ class sinh(HyperbolicFunction):
 
 class cosh(HyperbolicFunction):
     r"""
-    The hyperbolic cosine function, `\frac{e^x + e^{-x}}{2}`.
+    cosh(x) is the hyperbolic cosine of x.
 
-    * cosh(x) -> Returns the hyperbolic cosine of x
+    The hyperbolic cosine function is $\frac{e^x + e^{-x}}{2}$.
+
+    Examples
+    ========
+
+    >>> from sympy import cosh
+    >>> from sympy.abc import x
+    >>> cosh(x)
+    cosh(x)
 
     See Also
     ========
@@ -384,7 +400,7 @@ class cosh(HyperbolicFunction):
             return (cosh(x)*cosh(y) + sinh(x)*sinh(y)).expand(trig=True)
         return cosh(arg)
 
-    def _eval_rewrite_as_tractable(self, arg, **kwargs):
+    def _eval_rewrite_as_tractable(self, arg, limitvar=None, **kwargs):
         return (exp(arg) + exp(-arg)) / 2
 
     def _eval_rewrite_as_exp(self, arg, **kwargs):
@@ -488,9 +504,17 @@ class cosh(HyperbolicFunction):
 
 class tanh(HyperbolicFunction):
     r"""
-    The hyperbolic tangent function, `\frac{\sinh(x)}{\cosh(x)}`.
+    tanh(x) is the hyperbolic tangent of x.
 
-    * tanh(x) -> Returns the hyperbolic tangent of x
+    The hyperbolic tangent function is $\frac{\sinh(x)}{\cosh(x)}$.
+
+    Examples
+    ========
+
+    >>> from sympy import tanh
+    >>> from sympy.abc import x
+    >>> tanh(x)
+    tanh(x)
 
     See Also
     ========
@@ -600,7 +624,7 @@ class tanh(HyperbolicFunction):
         denom = sinh(re)**2 + cos(im)**2
         return (sinh(re)*cosh(re)/denom, sin(im)*cos(im)/denom)
 
-    def _eval_rewrite_as_tractable(self, arg, **kwargs):
+    def _eval_rewrite_as_tractable(self, arg, limitvar=None, **kwargs):
         neg_exp, pos_exp = exp(-arg), exp(arg)
         return (pos_exp - neg_exp)/(pos_exp + neg_exp)
 
@@ -674,9 +698,22 @@ class tanh(HyperbolicFunction):
 
 class coth(HyperbolicFunction):
     r"""
-    The hyperbolic cotangent function, `\frac{\cosh(x)}{\sinh(x)}`.
+    coth(x) is the hyperbolic cotangent of x.
 
-    * coth(x) -> Returns the hyperbolic cotangent of x
+    The hyperbolic cotangent function is $\frac{\cosh(x)}{\sinh(x)}$.
+
+    Examples
+    ========
+
+    >>> from sympy import coth
+    >>> from sympy.abc import x
+    >>> coth(x)
+    coth(x)
+
+    See Also
+    ========
+
+    sinh, cosh, acoth
     """
 
     def fdiff(self, argindex=1):
@@ -781,7 +818,7 @@ class coth(HyperbolicFunction):
         denom = sinh(re)**2 + sin(im)**2
         return (sinh(re)*cosh(re)/denom, -sin(im)*cos(im)/denom)
 
-    def _eval_rewrite_as_tractable(self, arg, **kwargs):
+    def _eval_rewrite_as_tractable(self, arg, limitvar=None, **kwargs):
         neg_exp, pos_exp = exp(-arg), exp(arg)
         return (pos_exp + neg_exp)/(pos_exp - neg_exp)
 
@@ -858,7 +895,7 @@ class ReciprocalHyperbolicFunction(HyperbolicFunction):
     def _eval_rewrite_as_exp(self, arg, **kwargs):
         return self._rewrite_reciprocal("_eval_rewrite_as_exp", arg)
 
-    def _eval_rewrite_as_tractable(self, arg, **kwargs):
+    def _eval_rewrite_as_tractable(self, arg, limitvar=None, **kwargs):
         return self._rewrite_reciprocal("_eval_rewrite_as_tractable", arg)
 
     def _eval_rewrite_as_tanh(self, arg, **kwargs):
@@ -889,9 +926,17 @@ class ReciprocalHyperbolicFunction(HyperbolicFunction):
 
 class csch(ReciprocalHyperbolicFunction):
     r"""
-    The hyperbolic cosecant function, `\frac{2}{e^x - e^{-x}}`
+    csch(x) is the hyperbolic cosecant of x.
 
-    * csch(x) -> Returns the hyperbolic cosecant of x
+    The hyperbolic cosecant function is $\frac{2}{e^x - e^{-x}}$
+
+    Examples
+    ========
+
+    >>> from sympy import csch
+    >>> from sympy.abc import x
+    >>> csch(x)
+    csch(x)
 
     See Also
     ========
@@ -948,9 +993,17 @@ class csch(ReciprocalHyperbolicFunction):
 
 class sech(ReciprocalHyperbolicFunction):
     r"""
-    The hyperbolic secant function, `\frac{2}{e^x + e^{-x}}`
+    sech(x) is the hyperbolic secant of x.
 
-    * sech(x) -> Returns the hyperbolic secant of x
+    The hyperbolic secant function is $\frac{2}{e^x + e^{-x}}$
+
+    Examples
+    ========
+
+    >>> from sympy import sech
+    >>> from sympy.abc import x
+    >>> sech(x)
+    sech(x)
 
     See Also
     ========
@@ -1002,9 +1055,19 @@ class InverseHyperbolicFunction(Function):
 
 class asinh(InverseHyperbolicFunction):
     """
+    asinh(x) is the inverse hyperbolic sine of x.
+
     The inverse hyperbolic sine function.
 
-    * asinh(x) -> Returns the inverse hyperbolic sine of x
+    Examples
+    ========
+
+    >>> from sympy import asinh
+    >>> from sympy.abc import x
+    >>> asinh(x).diff(x)
+    1/sqrt(x**2 + 1)
+    >>> asinh(1)
+    log(1 + sqrt(2))
 
     See Also
     ========
@@ -1109,9 +1172,19 @@ class asinh(InverseHyperbolicFunction):
 
 class acosh(InverseHyperbolicFunction):
     """
+    acosh(x) is the inverse hyperbolic cosine of x.
+
     The inverse hyperbolic cosine function.
 
-    * acosh(x) -> Returns the inverse hyperbolic cosine of x
+    Examples
+    ========
+
+    >>> from sympy import acosh
+    >>> from sympy.abc import x
+    >>> acosh(x).diff(x)
+    1/sqrt(x**2 - 1)
+    >>> acosh(1)
+    0
 
     See Also
     ========
@@ -1243,9 +1316,17 @@ class acosh(InverseHyperbolicFunction):
 
 class atanh(InverseHyperbolicFunction):
     """
+    atanh(x) is the inverse hyperbolic tangent of x.
+
     The inverse hyperbolic tangent function.
 
-    * atanh(x) -> Returns the inverse hyperbolic tangent of x
+    Examples
+    ========
+
+    >>> from sympy import atanh
+    >>> from sympy.abc import x
+    >>> atanh(x).diff(x)
+    1/(1 - x**2)
 
     See Also
     ========
@@ -1345,9 +1426,22 @@ class atanh(InverseHyperbolicFunction):
 
 class acoth(InverseHyperbolicFunction):
     """
+    acoth(x) is the inverse hyperbolic cotangent of x.
+
     The inverse hyperbolic cotangent function.
 
-    * acoth(x) -> Returns the inverse hyperbolic cotangent of x
+    Examples
+    ========
+
+    >>> from sympy import acoth
+    >>> from sympy.abc import x
+    >>> acoth(x).diff(x)
+    1/(1 - x**2)
+
+    See Also
+    ========
+
+    asinh, acosh, coth
     """
 
     def fdiff(self, argindex=1):
@@ -1423,9 +1517,9 @@ class acoth(InverseHyperbolicFunction):
 
 class asech(InverseHyperbolicFunction):
     """
-    The inverse hyperbolic secant function.
+    asech(x) is the inverse hyperbolic secant of x.
 
-    * asech(x) -> Returns the inverse hyperbolic secant of x
+    The inverse hyperbolic secant function.
 
     Examples
     ========
@@ -1554,9 +1648,9 @@ class asech(InverseHyperbolicFunction):
 
 class acsch(InverseHyperbolicFunction):
     """
-    The inverse hyperbolic cosecant function.
+    acsch(x) is the inverse hyperbolic cosecant of x.
 
-    * acsch(x) -> Returns the inverse hyperbolic cosecant of x
+    The inverse hyperbolic cosecant function.
 
     Examples
     ========
@@ -1575,6 +1669,11 @@ class acsch(InverseHyperbolicFunction):
     I*pi/6
     >>> acsch(S.ImaginaryUnit*(sqrt(6) - sqrt(2)))
     -5*I*pi/12
+
+    See Also
+    ========
+
+    asinh
 
     References
     ==========

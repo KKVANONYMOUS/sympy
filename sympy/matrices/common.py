@@ -26,6 +26,7 @@ from sympy.simplify.simplify import dotprodsimp as _dotprodsimp
 from sympy.utilities.exceptions import SymPyDeprecationWarning
 from sympy.utilities.iterables import flatten
 from sympy.utilities.misc import filldedent
+from sympy.tensor.array import NDimArray
 
 from .utilities import _get_intermediate_simp_bool
 
@@ -805,7 +806,7 @@ class MatrixSpecial(MatrixRequired):
         return cls._new(rows, cols, entry)
 
     @classmethod
-    def diag(kls, *args, **kwargs):
+    def diag(kls, *args, strict=False, unpack=True, rows=None, cols=None, **kwargs):
         """Returns a matrix with the specified diagonal.
         If matrices are passed, a block-diagonal matrix
         is created (i.e. the "direct sum" of the matrices).
@@ -900,8 +901,6 @@ class MatrixSpecial(MatrixRequired):
         from sympy.matrices.dense import Matrix
         from sympy.matrices.sparse import SparseMatrix
         klass = kwargs.get('cls', kls)
-        strict = kwargs.get('strict', False) # lists -> Matrices
-        unpack = kwargs.get('unpack', True)  # unpack single sequence
         if unpack and len(args) == 1 and is_sequence(args[0]) and \
                 not isinstance(args[0], MatrixBase):
             args = args[0]
@@ -936,8 +935,6 @@ class MatrixSpecial(MatrixRequired):
                     diag_entries[(i + rmax, j + cmax)] = _
             rmax += r
             cmax += c
-        rows = kwargs.get('rows', None)
-        cols = kwargs.get('cols', None)
         if rows is None:
             rows, cols = cols, rows
         if rows is None:
@@ -972,7 +969,7 @@ class MatrixSpecial(MatrixRequired):
         return klass._eval_eye(rows, cols)
 
     @classmethod
-    def jordan_block(kls, size=None, eigenvalue=None, **kwargs):
+    def jordan_block(kls, size=None, eigenvalue=None, *, band='upper', **kwargs):
         """Returns a Jordan block
 
         Parameters
@@ -1098,7 +1095,6 @@ class MatrixSpecial(MatrixRequired):
             ).warn()
 
         klass = kwargs.pop('cls', kls)
-        band = kwargs.pop('band', 'upper')
         rows = kwargs.pop('rows', None)
         cols = kwargs.pop('cols', None)
 
@@ -2336,6 +2332,10 @@ class MatrixOperations(MatrixRequired):
         >>> Matrix(_).subs(y, x)
         Matrix([[x]])
         """
+
+        if len(args) == 1 and  not isinstance(args[0], (dict, set)) and iter(args[0]) and not is_sequence(args[0]):
+            args = (list(args[0]),)
+
         return self.applyfunc(lambda x: x.subs(*args, **kwargs))
 
     def trace(self):
@@ -2537,6 +2537,8 @@ class MatrixArithmetic(MatrixRequired):
     @call_highest_priority('__radd__')
     def __add__(self, other):
         """Return self + other, raising ShapeError if shapes don't match."""
+        if isinstance(other, NDimArray): # Matrix and array addition is currently not implemented
+            return NotImplemented
         other = _matrixify(other)
         # matrix-like objects can have shapes.  This is
         # our first sanity check.
@@ -2558,8 +2560,8 @@ class MatrixArithmetic(MatrixRequired):
 
         raise TypeError('cannot add %s and %s' % (type(self), type(other)))
 
-    @call_highest_priority('__rdiv__')
-    def __div__(self, other):
+    @call_highest_priority('__rtruediv__')
+    def __truediv__(self, other):
         return self * (self.one / other)
 
     @call_highest_priority('__rmatmul__')
@@ -2789,6 +2791,20 @@ class MatrixArithmetic(MatrixRequired):
 
     @call_highest_priority('__mul__')
     def __rmul__(self, other):
+        return self.rmultiply(other)
+
+    def rmultiply(self, other, dotprodsimp=None):
+        """Same as __rmul__() but with optional simplification.
+
+        Parameters
+        ==========
+
+        dotprodsimp : bool, optional
+            Specifies whether intermediate term algebraic simplification is used
+            during matrix multiplications to control expression blowup and thus
+            speed up calculation. Default is off.
+        """
+        isimpbool = _get_intermediate_simp_bool(False, dotprodsimp)
         other = _matrixify(other)
         # matrix-like objects can have shapes.  This is
         # our first sanity check. Double check other is not explicitly not a Matrix.
@@ -2800,7 +2816,10 @@ class MatrixArithmetic(MatrixRequired):
 
         # honest sympy matrices defer to their class's routine
         if getattr(other, 'is_Matrix', False):
-            return other._new(other.as_mutable() * self)
+            m = self._eval_matrix_rmul(other)
+            if isimpbool:
+                return m._new(m.rows, m.cols, [_dotprodsimp(e) for e in m])
+            return m
         # Matrix-like objects can be passed to CommonMatrix routines directly.
         if getattr(other, 'is_MatrixLike', False):
             return MatrixArithmetic._eval_matrix_rmul(self, other)
@@ -2821,10 +2840,6 @@ class MatrixArithmetic(MatrixRequired):
     @call_highest_priority('__rsub__')
     def __sub__(self, a):
         return self + (-a)
-
-    @call_highest_priority('__rtruediv__')
-    def __truediv__(self, other):
-        return self.__div__(other)
 
 
 class MatrixCommon(MatrixArithmetic, MatrixOperations, MatrixProperties,

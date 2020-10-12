@@ -10,6 +10,7 @@ from sympy.core.power import Pow
 from sympy.core.singleton import S
 from sympy.core.symbol import Dummy, Symbol, uniquely_named_symbol
 from sympy.core.sympify import sympify
+from sympy.core.sympify import _sympify
 from sympy.functions import exp, factorial, log
 from sympy.functions.elementary.miscellaneous import Max, Min, sqrt
 from sympy.functions.special.tensor_functions import KroneckerDelta
@@ -355,7 +356,7 @@ class MatrixSubspaces(MatrixReductions):
     rowspace.__doc__      = _rowspace.__doc__
     orthogonalize.__doc__ = _orthogonalize.__doc__
 
-    orthogonalize         = classmethod(orthogonalize)
+    orthogonalize         = classmethod(orthogonalize)  # type:ignore
 
 
 class MatrixEigen(MatrixSubspaces):
@@ -453,9 +454,9 @@ class MatrixCalculus(MatrixCommon):
         limit
         """
         # XXX this should be handled here rather than in Derivative
-        from sympy import Derivative
+        from sympy.tensor.array.array_derivatives import ArrayDerivative
         kwargs.setdefault('evaluate', True)
-        deriv = Derivative(self, *args, evaluate=True)
+        deriv = ArrayDerivative(self, *args, evaluate=True)
         if not isinstance(self, Basic):
             return deriv.as_mutable()
         else:
@@ -463,18 +464,6 @@ class MatrixCalculus(MatrixCommon):
 
     def _eval_derivative(self, arg):
         return self.applyfunc(lambda x: x.diff(arg))
-
-    def _accept_eval_derivative(self, s):
-        return s._visit_eval_derivative_array(self)
-
-    def _visit_eval_derivative_scalar(self, base):
-        # Types are (base: scalar, self: matrix)
-        return self.applyfunc(lambda x: base.diff(x))
-
-    def _visit_eval_derivative_array(self, base):
-        # Types are (base: array/matrix, self: matrix)
-        from sympy import derive_by_array
-        return derive_by_array(base, self)
 
     def integrate(self, *args, **kwargs):
         """Integrate each element of the matrix.  ``args`` will
@@ -775,15 +764,6 @@ class MatrixBase(MatrixDeprecated,
         """
         return self.rows * self.cols
 
-    def __mathml__(self):
-        mml = ""
-        for i in range(self.rows):
-            mml += "<matrixrow>"
-            for j in range(self.cols):
-                mml += self[i, j].__mathml__()
-            mml += "</matrixrow>"
-        return "<matrix>" + mml + "</matrix>"
-
     def _matrix_pow_by_jordan_blocks(self, num):
         from sympy.matrices import diag, MutableMatrix
         from sympy import binomial
@@ -817,9 +797,6 @@ class MatrixBase(MatrixDeprecated,
             jordan_cell_power(j, num)
         return self._new(P.multiply(diag(*jordan_cells))
                 .multiply(P.inv()))
-
-    def __repr__(self):
-        return sstr(self)
 
     def __str__(self):
         if self.rows == 0 or self.cols == 0:
@@ -1518,17 +1495,19 @@ class MatrixBase(MatrixDeprecated,
         """
         from sympy import diff
 
+        f, x = _sympify(f), _sympify(x)
         if not self.is_square:
-            raise NonSquareMatrixError(
-                "Valid only for square matrices")
+            raise NonSquareMatrixError
         if not x.is_symbol:
-            raise ValueError("The parameter for f should be a symbol")
+            raise ValueError("{} must be a symbol.".format(x))
         if x not in f.free_symbols:
-            raise ValueError("x should be a parameter in Function")
+            raise ValueError(
+                "{} must be a parameter of {}.".format(x, f))
         if x in self.free_symbols:
-            raise ValueError("x should be a parameter in Matrix")
-        eigen = self.eigenvals()
+            raise ValueError(
+                "{} must not be a parameter of {}.".format(x, self))
 
+        eigen = self.eigenvals()
         max_mul = max(eigen.values())
         derivative = {}
         dd = f
@@ -1543,9 +1522,11 @@ class MatrixBase(MatrixDeprecated,
         for i in eigen:
             mul = eigen[i]
             f_val[row] = f.subs(x, i)
-            if not f.subs(x, i).free_symbols and not f.subs(x, i).is_complex:
-                raise ValueError("Cannot Evaluate the function is not"
-                                 " analytic at some eigen value")
+            if f_val[row].is_number and not f_val[row].is_complex:
+                raise ValueError(
+                    "Cannot evaluate the function because the "
+                    "function {} is not analytic at the given "
+                    "eigenvalue {}".format(f, f_val[row]))
             val = 1
             for a in range(n):
                 r[row, a] = val
@@ -1557,9 +1538,11 @@ class MatrixBase(MatrixDeprecated,
                     row = row + 1
                     mul -= 1
                     d_i = derivative[deri].subs(x, i)
-                    if not d_i.free_symbols and not d_i.is_complex:
-                        raise ValueError("Cannot Evaluate the function is not"
-                                 " analytic at some eigen value")
+                    if d_i.is_number and not d_i.is_complex:
+                        raise ValueError(
+                            "Cannot evaluate the function because the "
+                            "derivative {} is not analytic at the given "
+                            "eigenvalue {}".format(derivative[deri], d_i))
                     f_val[row] = d_i
                     for a in range(n):
                         if a - deri + 1 <= 0:

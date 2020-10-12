@@ -12,6 +12,7 @@ from .compatibility import as_int, HAS_GMPY, gmpy
 from .parameters import global_parameters
 from sympy.utilities.iterables import sift
 from sympy.utilities.exceptions import SymPyDeprecationWarning
+from sympy.multipledispatch import Dispatcher
 
 from mpmath.libmp import sqrtrem as mpmath_sqrtrem
 
@@ -290,6 +291,8 @@ class Pow(Expr):
             ).warn()
 
         if evaluate:
+            if b is S.Zero and e is S.NegativeInfinity:
+                return S.ComplexInfinity
             if e is S.ComplexInfinity:
                 return S.NaN
             if e is S.Zero:
@@ -869,6 +872,9 @@ class Pow(Expr):
 
     def as_base_exp(self):
         """Return base and exp of self.
+
+        Explnation
+        ==========
 
         If base is 1/Integer, then return Integer, -exp. If this extra
         processing is not needed, the base and exp properties will
@@ -1488,7 +1494,7 @@ class Pow(Expr):
         #    g has order O(x**d) where d is strictly positive.
         # 2) Then b**e = (f**e)*((1 + g)**e).
         #    (1 + g)**e is computed using binomial series.
-        from sympy import im, I, ceiling, polygamma, logcombine, EulerGamma, exp, nan, zoo, log, factorial, ff, PoleError, O, powdenest, Wild
+        from sympy import im, I, ceiling, polygamma, limit, logcombine, EulerGamma, exp, nan, zoo, log, factorial, ff, PoleError, O, powdenest, Wild
         from itertools import product
         self = powdenest(self, force=True).trigsimp()
         b, e = self.as_base_exp()
@@ -1509,7 +1515,7 @@ class Pow(Expr):
             if b.has(polygamma, EulerGamma) and logx is not None:
                 raise ValueError()
             _, m = b.leadterm(x)
-        except ValueError:
+        except (ValueError, NotImplementedError):
             b = b._eval_nseries(x, n=max(2, n), logx=logx, cdir=cdir).removeO()
             if b.has(nan, zoo):
                 raise NotImplementedError()
@@ -1553,7 +1559,14 @@ class Pow(Expr):
                     res[ex] = res.get(ex, S.Zero) + d1[e1]*d2[e2]
             return res
 
-        _, d = g.leadterm(x)
+        try:
+            _, d = g.leadterm(x)
+        except (ValueError, NotImplementedError):
+            if limit(g/x**maxpow, x, 0) == 0:
+                # g has higher order zero
+                return f**e + e*f**e*g  # first term of binomial series
+            else:
+                raise NotImplementedError()
         if not d.is_positive:
             g = (b - f).simplify()/f
             _, d = g.leadterm(x)
@@ -1725,6 +1738,8 @@ class Pow(Expr):
             new_e = e.subs(n, n + step)
             return (b**(new_e - e) - 1) * self
 
+power = Dispatcher('power')
+power.add((object, object), Pow)
 
 from .add import Add
 from .numbers import Integer

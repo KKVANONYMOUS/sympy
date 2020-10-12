@@ -1595,10 +1595,6 @@ def test_P27():
                 [0,  0, 0, a, 0],
                 [0, -2, 0, 0, 2]])
 
-    # XXX: 2-arg Mul hack
-    def mul2(x, y):
-        return Mul(x, y, evaluate=False)
-
     assert M.eigenvects() == [
         (a, 3, [
             Matrix([1, 0, 0, 0, 0]),
@@ -1606,10 +1602,10 @@ def test_P27():
             Matrix([0, 0, 0, 1, 0])
         ]),
         (1 - I, 1, [
-            Matrix([0, mul2(-S(1)/2, -1 - I), 0, 0, 1])
+            Matrix([0, (1 + I)/2, 0, 0, 1])
         ]),
         (1 + I, 1, [
-            Matrix([0, mul2(-S(1)/2, -1 + I), 0, 0, 1])
+            Matrix([0, (1 - I)/2, 0, 0, 1])
         ]),
     ]
 
@@ -2121,7 +2117,6 @@ def test_T11():
     assert limit(n**x/(x*product((1 + x/k), (k, 1, n))), n, oo) == gamma(x)
 
 
-@XFAIL
 def test_T12():
     x, t = symbols('x t', real=True)
     # Does not evaluate the limit but returns an expression with erf

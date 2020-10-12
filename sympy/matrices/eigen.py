@@ -80,7 +80,7 @@ def _eigenvects_mpmath(M):
 def _eigenvals(
     M, error_when_incomplete=True, *, simplify=False, multiple=False,
     rational=False, **flags):
-    r"""Return eigenvalues using the Berkowitz agorithm to compute
+    r"""Return eigenvalues using the Berkowitz algorithm to compute
     the characteristic polynomial.
 
     Parameters
@@ -147,8 +147,8 @@ def _eigenvals(
     Notes
     =====
 
-    Eigenvalues of a matrix `A` can be computed by solving a matrix
-    equation `\det(A - \lambda I) = 0`
+    Eigenvalues of a matrix $A$ can be computed by solving a matrix
+    equation $\det(A - \lambda I) = 0$
     """
     if not M:
         if multiple:
@@ -255,7 +255,7 @@ def _eigenspace(M, eigenval, iszerofunc=_iszero, simplify=False):
 
 
 # This functions is a candidate for caching if it gets implemented for matrices.
-def _eigenvects(M, error_when_incomplete=True, iszerofunc=_iszero, **flags):
+def _eigenvects(M, error_when_incomplete=True, iszerofunc=_iszero, *, chop=False, **flags):
     """Return list of triples (eigenval, multiplicity, eigenspace).
 
     Parameters
@@ -332,7 +332,6 @@ def _eigenvects(M, error_when_incomplete=True, iszerofunc=_iszero, **flags):
     """
     simplify = flags.get('simplify', True)
     primitive = flags.get('simplify', False)
-    chop = flags.pop('chop', False)
     flags.pop('multiple', None)  # remove this if it's there
 
     if not isinstance(simplify, FunctionType):
@@ -526,7 +525,7 @@ def _bidiagonal_decomposition(M, upper=True):
     """
     Returns (U,B,V.H)
 
-    `A = UBV^{H}`
+    $A = UBV^{H}$
 
     where A is the input matrix, and B is its Bidiagonalized form
 
@@ -558,9 +557,7 @@ def _bidiagonal_decomposition(M, upper=True):
 
 def _bidiagonalize(M, upper=True):
     """
-    Returns `B`
-
-    where B is the Bidiagonalized form of the input matrix.
+    Returns $B$, the Bidiagonalized form of the input matrix.
 
     Note: Bidiagonal Computation can hang for symbolic matrices.
 
@@ -973,17 +970,15 @@ _is_negative_semidefinite.__doc__ = _doc_positive_definite
 _is_indefinite.__doc__            = _doc_positive_definite
 
 
-def _jordan_form(M, calc_transform=True, **kwargs):
-    """Return ``(P, J)`` where `J` is a Jordan block
-    matrix and `P` is a matrix such that
-
-        ``M == P*J*P**-1``
+def _jordan_form(M, calc_transform=True, *, chop=False):
+    """Return $(P, J)$ where $J$ is a Jordan block
+    matrix and $P$ is a matrix such that $M = P J P^{-1}$
 
     Parameters
     ==========
 
     calc_transform : bool
-        If ``False``, then only `J` is returned.
+        If ``False``, then only $J$ is returned.
 
     chop : bool
         All matrices are converted to exact types when computing
@@ -1013,7 +1008,6 @@ def _jordan_form(M, calc_transform=True, **kwargs):
     if not M.is_square:
         raise NonSquareMatrixError("Only square matrices have Jordan forms")
 
-    chop       = kwargs.pop('chop', False)
     mat        = M
     has_floats = M.has(Float)
 

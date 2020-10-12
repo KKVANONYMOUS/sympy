@@ -554,6 +554,12 @@ def test_function__eval_nseries():
     assert sin(sqrt(x))._eval_nseries(x, 3, None) == \
         sqrt(x) - x**Rational(3, 2)/6 + x**Rational(5, 2)/120 + O(x**3)
 
+    # issue 19065:
+    s1 = f(x,y).series(y, n=2)
+    assert {i.name for i in s1.atoms(Symbol)} == {'x', 'xi', 'y'}
+    xi = Symbol('xi')
+    s2 = f(xi, y).series(y, n=2)
+    assert {i.name for i in s2.atoms(Symbol)} == {'xi', 'xi0', 'y'}
 
 def test_doit():
     n = Symbol('n', integer=True)
@@ -791,8 +797,7 @@ def test_straight_line():
 
 def test_sort_variable():
     vsort = Derivative._sort_variable_count
-    def vsort0(*v, **kw):
-        reverse = kw.get('reverse', False)
+    def vsort0(*v, reverse=False):
         return [i[0] for i in vsort([(i, 0) for i in (
             reversed(v) if reverse else v)])]
 

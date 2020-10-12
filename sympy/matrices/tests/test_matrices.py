@@ -1,4 +1,5 @@
 import random
+import concurrent.futures
 
 from sympy import (
     Abs, Add, E, Float, I, Integer, Max, Min, Poly, Pow, PurePoly, Rational,
@@ -13,6 +14,7 @@ from sympy.matrices import (
     matrix_multiply_elementwise, ones, randMatrix, rot_axis1, rot_axis2,
     rot_axis3, wronskian, zeros, MutableDenseMatrix, ImmutableDenseMatrix,
     MatrixSymbol, dotprodsimp)
+from sympy.matrices.utilities import _dotprodsimp_state
 from sympy.core.compatibility import iterable, Hashable
 from sympy.core import Tuple, Wild
 from sympy.functions.special.tensor_functions import KroneckerDelta
@@ -43,8 +45,6 @@ def test_args():
 
 def test_division():
     v = Matrix(1, 2, [x, y])
-    assert v.__div__(z) == Matrix(1, 2, [x/z, y/z])
-    assert v.__truediv__(z) == Matrix(1, 2, [x/z, y/z])
     assert v/z == Matrix(1, 2, [x/z, y/z])
 
 
@@ -364,7 +364,6 @@ def test_issue_17247_expression_blowup_7():
     with dotprodsimp(True):
         assert M.det('berkowitz') == 0
 
-@XFAIL # dotprodsimp is not on by default in this function
 def test_issue_17247_expression_blowup_8():
     M = Matrix(8, 8, [x+i for i in range (64)])
     with dotprodsimp(True):
@@ -500,7 +499,6 @@ def test_issue_17247_expression_blowup_21():
             [-26406945676288/22270005630769 + 10245925485056*I/22270005630769, 7453523312640/22270005630769 + 1601616519168*I/22270005630769, 633088/6416033 - 140288*I/6416033, 872209227109521408/21217636514687010905 + 6066405081802389504*I/21217636514687010905],
             [0, 0, 0, -11328/952745 + 87616*I/952745]]'''))
 
-@XFAIL # dotprodsimp is not on by default in this function
 def test_issue_17247_expression_blowup_22():
     M = Matrix(S('''[
         [             -3/4,       45/32 - 37*I/16,                   0,                     0],
@@ -527,7 +525,6 @@ def test_issue_17247_expression_blowup_23():
             [-26406945676288/22270005630769 + 10245925485056*I/22270005630769, 7453523312640/22270005630769 + 1601616519168*I/22270005630769, 633088/6416033 - 140288*I/6416033, 872209227109521408/21217636514687010905 + 6066405081802389504*I/21217636514687010905],
             [0, 0, 0, -11328/952745 + 87616*I/952745]]'''))
 
-@XFAIL # dotprodsimp is not on by default in this function
 def test_issue_17247_expression_blowup_24():
     M = SparseMatrix(S('''[
         [             -3/4,       45/32 - 37*I/16,                   0,                     0],
@@ -541,7 +538,6 @@ def test_issue_17247_expression_blowup_24():
             [-26406945676288/22270005630769 + 10245925485056*I/22270005630769, 7453523312640/22270005630769 + 1601616519168*I/22270005630769, 633088/6416033 - 140288*I/6416033, 872209227109521408/21217636514687010905 + 6066405081802389504*I/21217636514687010905],
             [0, 0, 0, -11328/952745 + 87616*I/952745]]'''))
 
-@XFAIL # dotprodsimp is not on by default in this function
 def test_issue_17247_expression_blowup_25():
     M = SparseMatrix(S('''[
         [             -3/4,       45/32 - 37*I/16,                   0,                     0],
@@ -2916,3 +2912,16 @@ def test_func():
 
     A = Matrix([[0, 2, 1, 6], [0, 0, 1, 2], [0, 0, 0, 3], [0, 0, 0, 0]])
     assert A.analytic_func(exp(x*t), x) == expand(simplify((A*t).exp()))
+
+
+def test_issue_19809():
+    def f():
+        assert _dotprodsimp_state.state == None
+        m = Matrix([[1]])
+        m = m * m
+        return True
+
+    with dotprodsimp(True):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(f)
+            assert future.result()
